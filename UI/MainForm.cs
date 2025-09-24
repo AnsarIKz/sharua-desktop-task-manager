@@ -11,11 +11,13 @@ namespace SharuaTaskManager.UI
     public partial class MainForm : Form
     {
         private TaskService _taskService;
+        private SettingsService _settingsService;
         private Panel _mainPanel;
         private Panel _todayTasksPanel;
         private Panel _statsPanel;
         private Button _addTaskButton;
         private Button _backlogButton;
+        private Button _settingsButton;
         private Label _titleLabel;
         private DataGridView _tasksDataGrid;
         private FlowLayoutPanel _statsFlow;
@@ -26,7 +28,8 @@ namespace SharuaTaskManager.UI
         {
             InitializeComponent();
             _taskService = new TaskService();
-            _isDarkMode = IsDarkMode();
+            _settingsService = new SettingsService();
+            _isDarkMode = _settingsService.IsDarkMode();
             SetupUI();
             LoadTodayTasks();
             LoadStats();
@@ -97,6 +100,18 @@ namespace SharuaTaskManager.UI
             viewToggleButton.FlatAppearance.BorderSize = 0;
             viewToggleButton.Click += ViewToggleButton_Click;
 
+            // Settings button
+            _settingsButton = new Button();
+            _settingsButton.Text = "⚙";
+            _settingsButton.Size = new Size(40, 30);
+            _settingsButton.Location = new Point(450, 20);
+            _settingsButton.BackColor = _isDarkMode ? Color.FromArgb(60, 60, 60) : Color.FromArgb(240, 240, 240);
+            _settingsButton.ForeColor = _isDarkMode ? Color.White : Color.Black;
+            _settingsButton.FlatStyle = FlatStyle.Flat;
+            _settingsButton.Font = new Font("Segoe UI", 12);
+            _settingsButton.FlatAppearance.BorderSize = 0;
+            _settingsButton.Click += SettingsButton_Click;
+
             _todayTasksPanel = new Panel();
             _todayTasksPanel.Location = new Point(20, 70);
             _todayTasksPanel.Size = new Size(760, 300);
@@ -160,6 +175,7 @@ namespace SharuaTaskManager.UI
             _mainPanel.Controls.Add(_titleLabel);
             _mainPanel.Controls.Add(_addTaskButton);
             _mainPanel.Controls.Add(_backlogButton);
+            _mainPanel.Controls.Add(_settingsButton);
             _mainPanel.Controls.Add(viewToggleButton);
             _mainPanel.Controls.Add(_todayTasksPanel);
             _mainPanel.Controls.Add(_statsPanel);
@@ -383,18 +399,43 @@ namespace SharuaTaskManager.UI
 
         private void MainForm_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Control && e.KeyCode == Keys.N)
+            // Parse hotkeys from settings
+            var addTaskKeys = _settingsService.ParseHotkey(_settingsService.AddTaskHotkey);
+            var toggleViewKeys = _settingsService.ParseHotkey(_settingsService.ToggleViewHotkey);
+            var showMainKeys = _settingsService.ParseHotkey(_settingsService.ShowMainHotkey);
+
+            // Check for hotkey matches
+            if (IsHotkeyMatch(e, addTaskKeys))
             {
                 AddTaskButton_Click(sender, e);
+            }
+            else if (IsHotkeyMatch(e, toggleViewKeys))
+            {
+                ViewToggleButton_Click(sender, e);
+            }
+            else if (IsHotkeyMatch(e, showMainKeys))
+            {
+                this.Show();
+                this.WindowState = FormWindowState.Normal;
+                this.BringToFront();
             }
             else if (e.KeyCode == Keys.Escape)
             {
                 this.Close();
             }
-            else if (e.Control && e.KeyCode == Keys.T)
-            {
-                ViewToggleButton_Click(sender, e);
-            }
+        }
+
+        private bool IsHotkeyMatch(KeyEventArgs e, Keys targetKeys)
+        {
+            if (targetKeys == Keys.None) return false;
+
+            var currentKeys = Keys.None;
+            if (e.Control) currentKeys |= Keys.Control;
+            if (e.Alt) currentKeys |= Keys.Alt;
+            if (e.Shift) currentKeys |= Keys.Shift;
+            currentKeys |= e.KeyCode;
+
+            return currentKeys == targetKeys;
         }
 
         private void ViewToggleButton_Click(object sender, EventArgs e)
@@ -436,6 +477,77 @@ namespace SharuaTaskManager.UI
                         MoveToBacklog(task.Id);
                     }
                 }
+            }
+        }
+
+        private void SettingsButton_Click(object sender, EventArgs e)
+        {
+            var settingsForm = new SettingsForm();
+            settingsForm.SettingsChanged += (s, args) =>
+            {
+                // Reload settings
+                _settingsService.LoadSettings();
+                _isDarkMode = _settingsService.IsDarkMode();
+                
+                // Update UI theme
+                UpdateTheme();
+            };
+            settingsForm.ShowDialog();
+        }
+
+        private void UpdateTheme()
+        {
+            // Update form colors
+            this.BackColor = _isDarkMode ? Color.FromArgb(30, 30, 30) : Color.FromArgb(250, 250, 250);
+            
+            // Update all controls recursively
+            UpdateControlTheme(this);
+            
+            // Reload data to refresh colors
+            LoadTodayTasks();
+            LoadStats();
+        }
+
+        private void UpdateControlTheme(Control control)
+        {
+            if (control is Label)
+            {
+                var label = (Label)control;
+                label.ForeColor = _isDarkMode ? Color.White : Color.Black;
+            }
+            else if (control is Button)
+            {
+                var button = (Button)control;
+                if (button.Text == "×" || button.Text == "⚙" || button.Text == "📋")
+                {
+                    button.ForeColor = _isDarkMode ? Color.White : Color.Black;
+                }
+                else if (button.Text == "Add Task")
+                {
+                    button.BackColor = Color.FromArgb(76, 175, 80);
+                }
+                else
+                {
+                    button.BackColor = _isDarkMode ? Color.FromArgb(60, 60, 60) : Color.FromArgb(240, 240, 240);
+                    button.ForeColor = _isDarkMode ? Color.White : Color.Black;
+                }
+            }
+            else if (control is DataGridView)
+            {
+                var dataGrid = (DataGridView)control;
+                dataGrid.BackgroundColor = _isDarkMode ? Color.FromArgb(30, 30, 30) : Color.White;
+                dataGrid.ForeColor = _isDarkMode ? Color.White : Color.Black;
+                dataGrid.ColumnHeadersDefaultCellStyle.BackColor = _isDarkMode ? Color.FromArgb(50, 50, 50) : Color.FromArgb(240, 240, 240);
+                dataGrid.ColumnHeadersDefaultCellStyle.ForeColor = _isDarkMode ? Color.White : Color.Black;
+                dataGrid.DefaultCellStyle.BackColor = _isDarkMode ? Color.FromArgb(30, 30, 30) : Color.White;
+                dataGrid.DefaultCellStyle.ForeColor = _isDarkMode ? Color.White : Color.Black;
+                dataGrid.AlternatingRowsDefaultCellStyle.BackColor = _isDarkMode ? Color.FromArgb(40, 40, 40) : Color.FromArgb(250, 250, 250);
+            }
+
+            // Recursively update child controls
+            foreach (Control child in control.Controls)
+            {
+                UpdateControlTheme(child);
             }
         }
 

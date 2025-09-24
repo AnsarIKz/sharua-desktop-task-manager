@@ -47,7 +47,7 @@ namespace SharuaTaskManager.UI
         {
             var mainPanel = new Panel();
             mainPanel.Dock = DockStyle.Fill;
-            mainPanel.BackColor = Color.Transparent;
+            mainPanel.BackColor = _isDarkMode ? Color.FromArgb(30, 30, 30) : Color.FromArgb(250, 250, 250);
             mainPanel.Padding = new Padding(20);
 
             // Title input - full width, no border like Notion
@@ -55,7 +55,7 @@ namespace SharuaTaskManager.UI
             _titleTextBox.Location = new Point(20, 20);
             _titleTextBox.Size = new Size(560, 40);
             _titleTextBox.Font = new Font("Segoe UI", 16);
-            _titleTextBox.BackColor = Color.Transparent;
+            _titleTextBox.BackColor = _isDarkMode ? Color.FromArgb(40, 40, 40) : Color.White;
             _titleTextBox.ForeColor = _isDarkMode ? Color.White : Color.Black;
             _titleTextBox.BorderStyle = BorderStyle.None;
             // PlaceholderText not supported in .NET Framework 4.x
