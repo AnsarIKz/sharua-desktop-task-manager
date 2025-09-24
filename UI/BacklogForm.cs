@@ -117,20 +117,14 @@ namespace SharuaTaskManager.UI
             titleLabel.Size = new Size(400, 20);
             titleLabel.AutoEllipsis = true;
 
-            var descLabel = new Label();
-            descLabel.Text = task.Description;
-            descLabel.Font = new Font("Segoe UI", 9);
-            descLabel.ForeColor = _isDarkMode ? Color.LightGray : Color.Gray;
-            descLabel.Location = new Point(15, 30);
-            descLabel.Size = new Size(400, 15);
-            descLabel.AutoEllipsis = true;
+            // Description field removed
 
-            var priorityLabel = new Label();
-            priorityLabel.Text = "Priority: " + task.Priority;
-            priorityLabel.Font = new Font("Segoe UI", 8);
-            priorityLabel.ForeColor = GetPriorityColor(task.Priority);
-            priorityLabel.Location = new Point(15, 50);
-            priorityLabel.AutoSize = true;
+            var dueDateLabel = new Label();
+            dueDateLabel.Text = "Created: " + task.CreatedAt.ToString("MMM dd, yyyy");
+            dueDateLabel.Font = new Font("Segoe UI", 8);
+            dueDateLabel.ForeColor = _isDarkMode ? Color.LightGray : Color.Gray;
+            dueDateLabel.Location = new Point(15, 50);
+            dueDateLabel.AutoSize = true;
 
             var moveToTodayButton = new Button();
             moveToTodayButton.Text = "Move to Today";
@@ -166,8 +160,7 @@ namespace SharuaTaskManager.UI
             deleteButton.Click += (s, e) => DeleteTask(task.Id);
 
             panel.Controls.Add(titleLabel);
-            panel.Controls.Add(descLabel);
-            panel.Controls.Add(priorityLabel);
+            panel.Controls.Add(dueDateLabel);
             panel.Controls.Add(moveToTodayButton);
             panel.Controls.Add(scheduleButton);
             panel.Controls.Add(deleteButton);
@@ -175,22 +168,6 @@ namespace SharuaTaskManager.UI
             return panel;
         }
 
-        private Color GetPriorityColor(TaskPriority priority)
-        {
-            switch (priority)
-            {
-                case TaskPriority.Low:
-                    return Color.FromArgb(76, 175, 80);
-                case TaskPriority.Medium:
-                    return Color.FromArgb(255, 152, 0);
-                case TaskPriority.High:
-                    return Color.FromArgb(255, 87, 34);
-                case TaskPriority.Urgent:
-                    return Color.FromArgb(244, 67, 54);
-                default:
-                    return Color.Gray;
-            }
-        }
 
         private void MoveToToday(Guid taskId)
         {

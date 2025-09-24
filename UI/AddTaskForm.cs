@@ -58,7 +58,7 @@ namespace SharuaTaskManager.UI
             _titleTextBox.BackColor = Color.Transparent;
             _titleTextBox.ForeColor = _isDarkMode ? Color.White : Color.Black;
             _titleTextBox.BorderStyle = BorderStyle.None;
-            _titleTextBox.PlaceholderText = "What needs to be done?";
+            // PlaceholderText not supported in .NET Framework 4.x
             _titleTextBox.TextChanged += TitleTextBox_TextChanged;
 
             // Add underline for title input

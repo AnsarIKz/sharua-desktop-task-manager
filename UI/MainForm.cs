@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -242,7 +243,7 @@ namespace SharuaTaskManager.UI
             // Add rows
             foreach (var task in tasks)
             {
-                var dueDateText = task.DueDate?.ToString("MMM dd") ?? "No date";
+                var dueDateText = task.DueDate.HasValue ? task.DueDate.Value.ToString("MMM dd") : "No date";
                 _tasksDataGrid.Rows.Add(task.Title, dueDateText, "Complete | Backlog");
             }
 
@@ -266,7 +267,7 @@ namespace SharuaTaskManager.UI
             titleLabel.AutoEllipsis = true;
 
             var dueDateLabel = new Label();
-            dueDateLabel.Text = task.DueDate?.ToString("MMM dd") ?? "No date";
+            dueDateLabel.Text = task.DueDate.HasValue ? task.DueDate.Value.ToString("MMM dd") : "No date";
             dueDateLabel.Font = new Font("Segoe UI", 9);
             dueDateLabel.ForeColor = _isDarkMode ? Color.LightGray : Color.Gray;
             dueDateLabel.Location = new Point(15, 25);
