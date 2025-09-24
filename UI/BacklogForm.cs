@@ -102,7 +102,7 @@ namespace SharuaTaskManager.UI
             }
         }
 
-        private Control CreateBacklogTaskControl(Task task)
+        private Control CreateBacklogTaskControl(Models.Task task)
         {
             var panel = new Panel();
             panel.Size = new Size(600, 80);

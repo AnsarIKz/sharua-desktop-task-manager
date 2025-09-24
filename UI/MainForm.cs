@@ -19,10 +19,8 @@ namespace SharuaTaskManager.UI
         private Button _backlogButton;
         private Button _settingsButton;
         private Label _titleLabel;
-        private DataGridView _tasksDataGrid;
         private FlowLayoutPanel _statsFlow;
         private bool _isDarkMode;
-        private bool _isGridViewMode = false;
 
         public MainForm()
         {
@@ -112,32 +110,11 @@ namespace SharuaTaskManager.UI
             _settingsButton.FlatAppearance.BorderSize = 0;
             _settingsButton.Click += SettingsButton_Click;
 
+
             _todayTasksPanel = new Panel();
             _todayTasksPanel.Location = new Point(20, 70);
             _todayTasksPanel.Size = new Size(760, 300);
             _todayTasksPanel.BackColor = Color.Transparent;
-
-            // Create DataGridView for table view
-            _tasksDataGrid = new DataGridView();
-            _tasksDataGrid.Dock = DockStyle.Fill;
-            _tasksDataGrid.BackgroundColor = _isDarkMode ? Color.FromArgb(30, 30, 30) : Color.White;
-            _tasksDataGrid.ForeColor = _isDarkMode ? Color.White : Color.Black;
-            _tasksDataGrid.BorderStyle = BorderStyle.None;
-            _tasksDataGrid.RowHeadersVisible = false;
-            _tasksDataGrid.AllowUserToAddRows = false;
-            _tasksDataGrid.AllowUserToDeleteRows = false;
-            _tasksDataGrid.ReadOnly = true;
-            _tasksDataGrid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            _tasksDataGrid.MultiSelect = false;
-            _tasksDataGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            _tasksDataGrid.ColumnHeadersDefaultCellStyle.BackColor = _isDarkMode ? Color.FromArgb(50, 50, 50) : Color.FromArgb(240, 240, 240);
-            _tasksDataGrid.ColumnHeadersDefaultCellStyle.ForeColor = _isDarkMode ? Color.White : Color.Black;
-            _tasksDataGrid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
-            _tasksDataGrid.DefaultCellStyle.BackColor = _isDarkMode ? Color.FromArgb(30, 30, 30) : Color.White;
-            _tasksDataGrid.DefaultCellStyle.ForeColor = _isDarkMode ? Color.White : Color.Black;
-            _tasksDataGrid.DefaultCellStyle.Font = new Font("Segoe UI", 9);
-            _tasksDataGrid.AlternatingRowsDefaultCellStyle.BackColor = _isDarkMode ? Color.FromArgb(40, 40, 40) : Color.FromArgb(250, 250, 250);
-            _tasksDataGrid.Visible = false;
 
             // Create FlowLayoutPanel for card view
             var todayTasksFlow = new FlowLayoutPanel();
@@ -168,7 +145,6 @@ namespace SharuaTaskManager.UI
             _statsFlow.BackColor = Color.Transparent;
 
             _todayTasksPanel.Controls.Add(todayTasksFlow);
-            _todayTasksPanel.Controls.Add(_tasksDataGrid);
             _statsPanel.Controls.Add(statsLabel);
             _statsPanel.Controls.Add(_statsFlow);
 
@@ -198,18 +174,10 @@ namespace SharuaTaskManager.UI
         private void LoadTodayTasks()
         {
             var todayTasks = _taskService.GetTodayTasks();
-
-            if (_isGridViewMode)
-            {
-                LoadTasksInGridView(todayTasks);
-            }
-            else
-            {
-                LoadTasksInCardView(todayTasks);
-            }
+            LoadTasksInCardView(todayTasks);
         }
 
-        private void LoadTasksInCardView(List<Task> tasks)
+        private void LoadTasksInCardView(List<Models.Task> tasks)
         {
             var flowPanel = _todayTasksPanel.Controls.OfType<FlowLayoutPanel>().FirstOrDefault();
             if (flowPanel != null)
@@ -235,65 +203,50 @@ namespace SharuaTaskManager.UI
             }
         }
 
-        private void LoadTasksInGridView(List<Task> tasks)
-        {
-            _tasksDataGrid.DataSource = null;
-            _tasksDataGrid.Columns.Clear();
 
-            if (!tasks.Any())
-            {
-                _tasksDataGrid.DataSource = new List<object> { new { Title = "No tasks for today. Great job! 🎉", DueDate = "", Actions = "" } };
-                return;
-            }
-
-            // Create columns
-            _tasksDataGrid.Columns.Add("Title", "Task");
-            _tasksDataGrid.Columns.Add("DueDate", "Due Date");
-            _tasksDataGrid.Columns.Add("Actions", "Actions");
-
-            // Set column properties
-            _tasksDataGrid.Columns["Title"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-            _tasksDataGrid.Columns["DueDate"].Width = 120;
-            _tasksDataGrid.Columns["Actions"].Width = 100;
-
-            // Add rows
-            foreach (var task in tasks)
-            {
-                var dueDateText = task.DueDate.HasValue ? task.DueDate.Value.ToString("MMM dd") : "No date";
-                _tasksDataGrid.Rows.Add(task.Title, dueDateText, "Complete | Backlog");
-            }
-
-            // Add click handlers for action buttons
-            _tasksDataGrid.CellClick += TasksDataGrid_CellClick;
-        }
-
-        private Control CreateTaskControl(Task task)
+        private Control CreateTaskControl(Models.Task task)
         {
             var panel = new Panel();
-            panel.Size = new Size(720, 40);
+            panel.Size = new Size(720, 60);
             panel.BackColor = _isDarkMode ? Color.FromArgb(40, 40, 40) : Color.FromArgb(250, 250, 250);
             panel.Margin = new Padding(0, 5, 0, 5);
 
             var titleLabel = new Label();
             titleLabel.Text = task.Title;
-            titleLabel.Font = new Font("Segoe UI", 11, FontStyle.Bold);
+            titleLabel.Font = new Font("Segoe UI", 12, FontStyle.Bold);
             titleLabel.ForeColor = _isDarkMode ? Color.White : Color.Black;
             titleLabel.Location = new Point(15, 10);
             titleLabel.Size = new Size(500, 20);
             titleLabel.AutoEllipsis = true;
 
+            var descLabel = new Label();
+            descLabel.Text = !string.IsNullOrEmpty(task.Description) ? task.Description : "No description";
+            descLabel.Font = new Font("Segoe UI", 9);
+            descLabel.ForeColor = _isDarkMode ? Color.LightGray : Color.Gray;
+            descLabel.Location = new Point(15, 30);
+            descLabel.Size = new Size(500, 15);
+            descLabel.AutoEllipsis = true;
+
             var dueDateLabel = new Label();
             dueDateLabel.Text = task.DueDate.HasValue ? task.DueDate.Value.ToString("MMM dd") : "No date";
-            dueDateLabel.Font = new Font("Segoe UI", 9);
+            dueDateLabel.Font = new Font("Segoe UI", 8);
             dueDateLabel.ForeColor = _isDarkMode ? Color.LightGray : Color.Gray;
-            dueDateLabel.Location = new Point(15, 25);
+            dueDateLabel.Location = new Point(15, 45);
             dueDateLabel.Size = new Size(100, 15);
             dueDateLabel.AutoEllipsis = true;
+
+            var priorityLabel = new Label();
+            priorityLabel.Text = task.Priority.ToString();
+            priorityLabel.Font = new Font("Segoe UI", 8);
+            priorityLabel.ForeColor = GetPriorityColor(task.Priority);
+            priorityLabel.Location = new Point(120, 45);
+            priorityLabel.Size = new Size(60, 15);
+            priorityLabel.AutoEllipsis = true;
 
             var completeButton = new Button();
             completeButton.Text = "✓";
             completeButton.Size = new Size(30, 30);
-            completeButton.Location = new Point(650, 5);
+            completeButton.Location = new Point(650, 15);
             completeButton.BackColor = Color.FromArgb(76, 175, 80);
             completeButton.ForeColor = Color.White;
             completeButton.FlatStyle = FlatStyle.Flat;
@@ -304,7 +257,7 @@ namespace SharuaTaskManager.UI
             var backlogButton = new Button();
             backlogButton.Text = "📋";
             backlogButton.Size = new Size(30, 30);
-            backlogButton.Location = new Point(610, 5);
+            backlogButton.Location = new Point(610, 15);
             backlogButton.BackColor = Color.FromArgb(255, 152, 0);
             backlogButton.ForeColor = Color.White;
             backlogButton.FlatStyle = FlatStyle.Flat;
@@ -313,11 +266,30 @@ namespace SharuaTaskManager.UI
             backlogButton.Click += (s, e) => MoveToBacklog(task.Id);
 
             panel.Controls.Add(titleLabel);
+            panel.Controls.Add(descLabel);
             panel.Controls.Add(dueDateLabel);
+            panel.Controls.Add(priorityLabel);
             panel.Controls.Add(completeButton);
             panel.Controls.Add(backlogButton);
 
             return panel;
+        }
+
+        private Color GetPriorityColor(TaskPriority priority)
+        {
+            switch (priority)
+            {
+                case TaskPriority.Low:
+                    return Color.FromArgb(76, 175, 80);
+                case TaskPriority.Medium:
+                    return Color.FromArgb(255, 152, 0);
+                case TaskPriority.High:
+                    return Color.FromArgb(255, 87, 34);
+                case TaskPriority.Urgent:
+                    return Color.FromArgb(244, 67, 54);
+                default:
+                    return _isDarkMode ? Color.LightGray : Color.Gray;
+            }
         }
 
         private void LoadStats()
@@ -371,13 +343,20 @@ namespace SharuaTaskManager.UI
 
         private void AddTaskButton_Click(object sender, EventArgs e)
         {
-            var addTaskForm = new AddTaskForm(_taskService);
-            addTaskForm.TaskAdded += (s, args) =>
+            try
             {
-                LoadTodayTasks();
-                LoadStats();
-            };
-            addTaskForm.ShowDialog();
+                var addTaskForm = new AddTaskForm(_taskService, _settingsService);
+                addTaskForm.TaskAdded += (s, task) =>
+                {
+                    LoadTodayTasks();
+                    LoadStats();
+                };
+                addTaskForm.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error opening Add Task form: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void BacklogButton_Click(object sender, EventArgs e)
@@ -440,45 +419,19 @@ namespace SharuaTaskManager.UI
 
         private void ViewToggleButton_Click(object sender, EventArgs e)
         {
-            _isGridViewMode = !_isGridViewMode;
-            var flowPanel = _todayTasksPanel.Controls.OfType<FlowLayoutPanel>().FirstOrDefault();
-            
-            if (_isGridViewMode)
+            if (this.Visible)
             {
-                if (flowPanel != null) flowPanel.Visible = false;
-                _tasksDataGrid.Visible = true;
+                this.Hide();
             }
             else
             {
-                _tasksDataGrid.Visible = false;
-                if (flowPanel != null) flowPanel.Visible = true;
+                this.Show();
+                this.WindowState = FormWindowState.Normal;
+                this.BringToFront();
+                this.Activate();
             }
-            
-            LoadTodayTasks();
         }
 
-        private void TasksDataGrid_CellClick(object sender, DataGridViewCellEventArgs e)
-        {
-            if (e.RowIndex >= 0 && e.ColumnIndex == 2) // Actions column
-            {
-                var taskTitle = _tasksDataGrid.Rows[e.RowIndex].Cells[0].Value.ToString();
-                var todayTasks = _taskService.GetTodayTasks();
-                var task = todayTasks.FirstOrDefault(t => t.Title == taskTitle);
-                
-                if (task != null)
-                {
-                    var cellValue = _tasksDataGrid.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString();
-                    if (cellValue.Contains("Complete"))
-                    {
-                        CompleteTask(task.Id);
-                    }
-                    else if (cellValue.Contains("Backlog"))
-                    {
-                        MoveToBacklog(task.Id);
-                    }
-                }
-            }
-        }
 
         private void SettingsButton_Click(object sender, EventArgs e)
         {

@@ -10,7 +10,7 @@ namespace SharuaTaskManager.Services
     public class TaskService
     {
         private readonly string _dataPath;
-        private List<Task> _tasks;
+        private List<Models.Task> _tasks;
 
         public TaskService()
         {
@@ -18,12 +18,12 @@ namespace SharuaTaskManager.Services
             _tasks = LoadTasks();
         }
 
-        public List<Task> GetAllTasks()
+        public List<Models.Task> GetAllTasks()
         {
             return _tasks.ToList();
         }
 
-        public List<Task> GetTodayTasks()
+        public List<Models.Task> GetTodayTasks()
         {
             var today = DateTime.Today;
             return _tasks.Where(t => !t.IsInBacklog && 
@@ -31,12 +31,12 @@ namespace SharuaTaskManager.Services
                 !t.IsCompleted).ToList();
         }
 
-        public List<Task> GetBacklogTasks()
+        public List<Models.Task> GetBacklogTasks()
         {
             return _tasks.Where(t => t.IsInBacklog && !t.IsCompleted).ToList();
         }
 
-        public List<Task> GetCompletedTasks()
+        public List<Models.Task> GetCompletedTasks()
         {
             return _tasks.Where(t => t.IsCompleted).ToList();
         }
@@ -56,13 +56,13 @@ namespace SharuaTaskManager.Services
             return stats;
         }
 
-        public void AddTask(Task task)
+        public void AddTask(Models.Task task)
         {
             _tasks.Add(task);
             SaveTasks();
         }
 
-        public void UpdateTask(Task task)
+        public void UpdateTask(Models.Task task)
         {
             var existingTask = _tasks.FirstOrDefault(t => t.Id == task.Id);
             if (existingTask != null)
@@ -112,7 +112,7 @@ namespace SharuaTaskManager.Services
             }
         }
 
-        private List<Task> LoadTasks()
+        private List<Models.Task> LoadTasks()
         {
             try
             {
@@ -127,7 +127,7 @@ namespace SharuaTaskManager.Services
                 System.Diagnostics.Debug.WriteLine("Error loading tasks: " + ex.Message);
             }
 
-            return new List<Task>();
+            return new List<Models.Task>();
         }
 
         private void SaveTasks()
@@ -147,7 +147,7 @@ namespace SharuaTaskManager.Services
             }
         }
 
-        private string SerializeTasks(List<Task> tasks)
+        private string SerializeTasks(List<Models.Task> tasks)
         {
             var sb = new StringBuilder();
             sb.AppendLine("[");
@@ -158,11 +158,13 @@ namespace SharuaTaskManager.Services
                 sb.AppendLine("  {");
                 sb.AppendLine("    \"Id\": \"" + task.Id + "\",");
                 sb.AppendLine("    \"Title\": \"" + EscapeJson(task.Title) + "\",");
+                sb.AppendLine("    \"Description\": \"" + EscapeJson(task.Description) + "\",");
                 sb.AppendLine("    \"CreatedAt\": \"" + task.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss") + "\",");
                 sb.AppendLine("    \"DueDate\": " + (task.DueDate.HasValue ? "\"" + task.DueDate.Value.ToString("yyyy-MM-dd") + "\"" : "null") + ",");
                 sb.AppendLine("    \"CompletedAt\": " + (task.CompletedAt.HasValue ? "\"" + task.CompletedAt.Value.ToString("yyyy-MM-ddTHH:mm:ss") + "\"" : "null") + ",");
                 sb.AppendLine("    \"IsCompleted\": " + task.IsCompleted.ToString().ToLower() + ",");
-                sb.AppendLine("    \"IsInBacklog\": " + task.IsInBacklog.ToString().ToLower());
+                sb.AppendLine("    \"IsInBacklog\": " + task.IsInBacklog.ToString().ToLower() + ",");
+                sb.AppendLine("    \"Priority\": " + (int)task.Priority);
                 sb.AppendLine(i < tasks.Count - 1 ? "  }," : "  }");
             }
             
@@ -170,15 +172,15 @@ namespace SharuaTaskManager.Services
             return sb.ToString();
         }
 
-        private List<Task> DeserializeTasks(string json)
+        private List<Models.Task> DeserializeTasks(string json)
         {
-            var tasks = new List<Task>();
+            var tasks = new List<Models.Task>();
             if (string.IsNullOrWhiteSpace(json)) return tasks;
 
             try
             {
                 var lines = json.Split('\n');
-                Task currentTask = null;
+                Models.Task currentTask = null;
                 
                 foreach (var line in lines)
                 {
@@ -186,7 +188,7 @@ namespace SharuaTaskManager.Services
                     
                     if (trimmed == "{")
                     {
-                        currentTask = new Task();
+                        currentTask = new Models.Task();
                     }
                     else if (trimmed == "}," || trimmed == "}")
                     {
@@ -214,6 +216,9 @@ namespace SharuaTaskManager.Services
                                 case "Title":
                                     currentTask.Title = UnescapeJson(value);
                                     break;
+                                case "Description":
+                                    currentTask.Description = UnescapeJson(value);
+                                    break;
                                 case "CreatedAt":
                                     DateTime createdAt;
                                     if (DateTime.TryParse(value, out createdAt))
@@ -240,6 +245,11 @@ namespace SharuaTaskManager.Services
                                     break;
                                 case "IsInBacklog":
                                     currentTask.IsInBacklog = value == "true";
+                                    break;
+                                case "Priority":
+                                    int priority;
+                                    if (int.TryParse(value, out priority))
+                                        currentTask.Priority = (TaskPriority)priority;
                                     break;
                             }
                         }

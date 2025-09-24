@@ -9,21 +9,27 @@ namespace SharuaTaskManager.UI
     public partial class AddTaskForm : Form
     {
         private TaskService _taskService;
-        private TextBox _titleTextBox;
+        private SettingsService _settingsService;
+        private RichTextBox _titleTextBox;
+        private RichTextBox _contentTextBox;
+        private Panel _toolbarPanel;
         private Button _todayButton;
         private Button _tomorrowButton;
         private DateTimePicker _customDatePicker;
+        private ComboBox _priorityComboBox;
         private Button _saveButton;
         private Button _cancelButton;
         private bool _isDarkMode;
         private DateTime? _selectedDate;
+        private TaskPriority _selectedPriority;
 
-        public event EventHandler TaskAdded;
+        public event EventHandler<Models.Task> TaskAdded;
 
-        public AddTaskForm(TaskService taskService)
+        public AddTaskForm(TaskService taskService, SettingsService settingsService)
         {
             _taskService = taskService;
-            _isDarkMode = IsDarkMode();
+            _settingsService = settingsService;
+            _isDarkMode = _settingsService.IsDarkMode();
             InitializeComponent();
             SetupUI();
         }
@@ -32,13 +38,14 @@ namespace SharuaTaskManager.UI
         {
             this.SuspendLayout();
             
-            this.Text = "Add New Task";
-            this.Size = new Size(600, 200);
+            this.Text = "New Task";
+            this.Size = new Size(800, 600);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.None;
-            this.BackColor = _isDarkMode ? Color.FromArgb(30, 30, 30) : Color.FromArgb(250, 250, 250);
+            this.BackColor = _isDarkMode ? Color.FromArgb(32, 32, 32) : Color.FromArgb(255, 255, 255);
             this.TopMost = true;
-            this.Opacity = 0.95;
+            this.Opacity = 1.0;
+            this.ShowInTaskbar = false;
             
             this.ResumeLayout(false);
         }
@@ -47,32 +54,55 @@ namespace SharuaTaskManager.UI
         {
             var mainPanel = new Panel();
             mainPanel.Dock = DockStyle.Fill;
-            mainPanel.BackColor = _isDarkMode ? Color.FromArgb(30, 30, 30) : Color.FromArgb(250, 250, 250);
-            mainPanel.Padding = new Padding(20);
+            mainPanel.BackColor = _isDarkMode ? Color.FromArgb(32, 32, 32) : Color.FromArgb(255, 255, 255);
+            mainPanel.Padding = new Padding(40, 60, 40, 40);
 
-            // Title input - full width, no border like Notion
-            _titleTextBox = new TextBox();
-            _titleTextBox.Location = new Point(20, 20);
-            _titleTextBox.Size = new Size(560, 40);
-            _titleTextBox.Font = new Font("Segoe UI", 16);
-            _titleTextBox.BackColor = _isDarkMode ? Color.FromArgb(40, 40, 40) : Color.White;
+            // Title input - Notion style
+            _titleTextBox = new RichTextBox();
+            _titleTextBox.Location = new Point(40, 60);
+            _titleTextBox.Size = new Size(720, 60);
+            _titleTextBox.Font = new Font("Segoe UI", 24, FontStyle.Bold);
+            _titleTextBox.BackColor = _isDarkMode ? Color.FromArgb(32, 32, 32) : Color.FromArgb(255, 255, 255);
             _titleTextBox.ForeColor = _isDarkMode ? Color.White : Color.Black;
             _titleTextBox.BorderStyle = BorderStyle.None;
-            // PlaceholderText not supported in .NET Framework 4.x
+            _titleTextBox.Multiline = true;
+            _titleTextBox.ScrollBars = RichTextBoxScrollBars.None;
+            _titleTextBox.Text = "Untitled";
+            _titleTextBox.SelectionStart = 0;
+            _titleTextBox.SelectionLength = _titleTextBox.Text.Length;
+            _titleTextBox.GotFocus += TitleTextBox_GotFocus;
+            _titleTextBox.LostFocus += TitleTextBox_LostFocus;
             _titleTextBox.TextChanged += TitleTextBox_TextChanged;
+            _titleTextBox.KeyDown += TitleTextBox_KeyDown;
 
-            // Add underline for title input
-            var titleUnderline = new Panel();
-            titleUnderline.Location = new Point(20, 60);
-            titleUnderline.Size = new Size(560, 1);
-            titleUnderline.BackColor = _isDarkMode ? Color.FromArgb(60, 60, 60) : Color.FromArgb(200, 200, 200);
+            // Content area - Notion style
+            _contentTextBox = new RichTextBox();
+            _contentTextBox.Location = new Point(40, 140);
+            _contentTextBox.Size = new Size(720, 300);
+            _contentTextBox.Font = new Font("Segoe UI", 14);
+            _contentTextBox.BackColor = _isDarkMode ? Color.FromArgb(32, 32, 32) : Color.FromArgb(255, 255, 255);
+            _contentTextBox.ForeColor = _isDarkMode ? Color.FromArgb(200, 200, 200) : Color.FromArgb(100, 100, 100);
+            _contentTextBox.BorderStyle = BorderStyle.None;
+            _contentTextBox.Multiline = true;
+            _contentTextBox.ScrollBars = RichTextBoxScrollBars.Vertical;
+            _contentTextBox.Text = "Start writing...";
+            _contentTextBox.GotFocus += ContentTextBox_GotFocus;
+            _contentTextBox.LostFocus += ContentTextBox_LostFocus;
+            _contentTextBox.TextChanged += ContentTextBox_TextChanged;
+
+            // Toolbar panel
+            _toolbarPanel = new Panel();
+            _toolbarPanel.Location = new Point(40, 460);
+            _toolbarPanel.Size = new Size(720, 50);
+            _toolbarPanel.BackColor = _isDarkMode ? Color.FromArgb(40, 40, 40) : Color.FromArgb(248, 248, 248);
+            _toolbarPanel.Padding = new Padding(10);
 
             // Date selection buttons
             _todayButton = new Button();
             _todayButton.Text = "Today";
-            _todayButton.Size = new Size(80, 30);
-            _todayButton.Location = new Point(20, 80);
-            _todayButton.BackColor = _isDarkMode ? Color.FromArgb(50, 50, 50) : Color.FromArgb(240, 240, 240);
+            _todayButton.Size = new Size(80, 32);
+            _todayButton.Location = new Point(10, 9);
+            _todayButton.BackColor = _isDarkMode ? Color.FromArgb(60, 60, 60) : Color.FromArgb(240, 240, 240);
             _todayButton.ForeColor = _isDarkMode ? Color.White : Color.Black;
             _todayButton.FlatStyle = FlatStyle.Flat;
             _todayButton.Font = new Font("Segoe UI", 9);
@@ -81,9 +111,9 @@ namespace SharuaTaskManager.UI
 
             _tomorrowButton = new Button();
             _tomorrowButton.Text = "Tomorrow";
-            _tomorrowButton.Size = new Size(80, 30);
-            _tomorrowButton.Location = new Point(110, 80);
-            _tomorrowButton.BackColor = _isDarkMode ? Color.FromArgb(50, 50, 50) : Color.FromArgb(240, 240, 240);
+            _tomorrowButton.Size = new Size(80, 32);
+            _tomorrowButton.Location = new Point(100, 9);
+            _tomorrowButton.BackColor = _isDarkMode ? Color.FromArgb(60, 60, 60) : Color.FromArgb(240, 240, 240);
             _tomorrowButton.ForeColor = _isDarkMode ? Color.White : Color.Black;
             _tomorrowButton.FlatStyle = FlatStyle.Flat;
             _tomorrowButton.Font = new Font("Segoe UI", 9);
@@ -92,21 +122,22 @@ namespace SharuaTaskManager.UI
 
             // Custom date picker
             _customDatePicker = new DateTimePicker();
-            _customDatePicker.Location = new Point(200, 80);
-            _customDatePicker.Size = new Size(120, 30);
+            _customDatePicker.Location = new Point(190, 9);
+            _customDatePicker.Size = new Size(120, 32);
             _customDatePicker.Font = new Font("Segoe UI", 9);
             _customDatePicker.Format = DateTimePickerFormat.Short;
             _customDatePicker.ValueChanged += (s, e) => SelectDate(_customDatePicker.Value.Date);
 
-            // Save button - styled
+
+            // Save button - modern style
             _saveButton = new Button();
-            _saveButton.Text = "Add Task";
-            _saveButton.Size = new Size(100, 35);
-            _saveButton.Location = new Point(450, 80);
-            _saveButton.BackColor = Color.FromArgb(76, 175, 80);
-            _saveButton.ForeColor = Color.White;
+            _saveButton.Text = "Create Task";
+            _saveButton.Size = new Size(120, 32);
+            _saveButton.Location = new Point(320, 9);
+            _saveButton.BackColor = Color.White;
+            _saveButton.ForeColor = Color.Black;
             _saveButton.FlatStyle = FlatStyle.Flat;
-            _saveButton.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+            _saveButton.Font = new Font("Segoe UI", 9, FontStyle.Bold);
             _saveButton.FlatAppearance.BorderSize = 0;
             _saveButton.Click += SaveButton_Click;
             _saveButton.Enabled = false;
@@ -114,63 +145,122 @@ namespace SharuaTaskManager.UI
             // Cancel button
             _cancelButton = new Button();
             _cancelButton.Text = "Cancel";
-            _cancelButton.Size = new Size(80, 35);
-            _cancelButton.Location = new Point(340, 80);
-            _cancelButton.BackColor = _isDarkMode ? Color.FromArgb(60, 60, 60) : Color.FromArgb(200, 200, 200);
+            _cancelButton.Size = new Size(80, 32);
+            _cancelButton.Location = new Point(450, 9);
+            _cancelButton.BackColor = _isDarkMode ? Color.FromArgb(60, 60, 60) : Color.FromArgb(240, 240, 240);
             _cancelButton.ForeColor = _isDarkMode ? Color.White : Color.Black;
             _cancelButton.FlatStyle = FlatStyle.Flat;
-            _cancelButton.Font = new Font("Segoe UI", 10);
+            _cancelButton.Font = new Font("Segoe UI", 9);
             _cancelButton.FlatAppearance.BorderSize = 0;
             _cancelButton.Click += (s, e) => this.Close();
 
             // Close button
             var closeButton = new Button();
             closeButton.Text = "×";
-            closeButton.Size = new Size(30, 30);
-            closeButton.Location = new Point(550, 10);
+            closeButton.Size = new Size(32, 32);
+            closeButton.Location = new Point(748, 10);
             closeButton.BackColor = Color.Transparent;
             closeButton.ForeColor = _isDarkMode ? Color.White : Color.Black;
             closeButton.FlatStyle = FlatStyle.Flat;
-            closeButton.Font = new Font("Segoe UI", 12, FontStyle.Bold);
+            closeButton.Font = new Font("Segoe UI", 14, FontStyle.Bold);
             closeButton.FlatAppearance.BorderSize = 0;
             closeButton.Click += (s, e) => this.Close();
 
+            // Add controls to toolbar
+            _toolbarPanel.Controls.Add(_todayButton);
+            _toolbarPanel.Controls.Add(_tomorrowButton);
+            _toolbarPanel.Controls.Add(_customDatePicker);
+            _toolbarPanel.Controls.Add(_saveButton);
+            _toolbarPanel.Controls.Add(_cancelButton);
+
             mainPanel.Controls.Add(_titleTextBox);
-            mainPanel.Controls.Add(titleUnderline);
-            mainPanel.Controls.Add(_todayButton);
-            mainPanel.Controls.Add(_tomorrowButton);
-            mainPanel.Controls.Add(_customDatePicker);
-            mainPanel.Controls.Add(_saveButton);
-            mainPanel.Controls.Add(_cancelButton);
+            mainPanel.Controls.Add(_contentTextBox);
+            mainPanel.Controls.Add(_toolbarPanel);
             mainPanel.Controls.Add(closeButton);
 
             this.Controls.Add(mainPanel);
 
             _titleTextBox.Focus();
+            _selectedPriority = TaskPriority.Medium;
+        }
+
+        private void TitleTextBox_GotFocus(object sender, EventArgs e)
+        {
+            if (_titleTextBox.Text == "Untitled")
+            {
+                _titleTextBox.Text = "";
+                _titleTextBox.ForeColor = _isDarkMode ? Color.White : Color.Black;
+            }
+        }
+
+        private void TitleTextBox_LostFocus(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(_titleTextBox.Text))
+            {
+                _titleTextBox.Text = "Untitled";
+                _titleTextBox.ForeColor = _isDarkMode ? Color.FromArgb(150, 150, 150) : Color.FromArgb(150, 150, 150);
+            }
+        }
+
+        private void ContentTextBox_GotFocus(object sender, EventArgs e)
+        {
+            if (_contentTextBox.Text == "Start writing...")
+            {
+                _contentTextBox.Text = "";
+                _contentTextBox.ForeColor = _isDarkMode ? Color.White : Color.Black;
+            }
+        }
+
+        private void ContentTextBox_LostFocus(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(_contentTextBox.Text))
+            {
+                _contentTextBox.Text = "Start writing...";
+                _contentTextBox.ForeColor = _isDarkMode ? Color.FromArgb(150, 150, 150) : Color.FromArgb(150, 150, 150);
+            }
+        }
+
+        private void TitleTextBox_TextChanged(object sender, EventArgs e)
+        {
+            _saveButton.Enabled = !string.IsNullOrWhiteSpace(_titleTextBox.Text) && _titleTextBox.Text != "Untitled";
+        }
+
+        private void ContentTextBox_TextChanged(object sender, EventArgs e)
+        {
+            // Auto-resize content area
+            var size = TextRenderer.MeasureText(_contentTextBox.Text, _contentTextBox.Font);
+            var newHeight = Math.Max(60, Math.Min(300, size.Height + 20));
+            _contentTextBox.Height = newHeight;
+            _toolbarPanel.Location = new Point(40, 140 + newHeight);
+        }
+
+        private void TitleTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                e.Handled = true;
+                _contentTextBox.Focus();
+            }
         }
 
         private void SaveButton_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(_titleTextBox.Text))
+            if (string.IsNullOrWhiteSpace(_titleTextBox.Text) || _titleTextBox.Text == "Untitled")
             {
                 MessageBox.Show("Please enter a task title.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            var task = new Task();
+            var task = new Models.Task();
             task.Title = _titleTextBox.Text.Trim();
+            task.Description = _contentTextBox.Text.Trim();
             task.DueDate = _selectedDate;
-            task.IsInBacklog = !_selectedDate.HasValue; // If no date selected, goes to backlog
+            task.IsInBacklog = !_selectedDate.HasValue;
+            task.Priority = _selectedPriority;
 
             _taskService.AddTask(task);
-            if (TaskAdded != null)
-                TaskAdded(this, EventArgs.Empty);
+            TaskAdded?.Invoke(this, task);
             this.Close();
-        }
-
-        private void TitleTextBox_TextChanged(object sender, EventArgs e)
-        {
-            _saveButton.Enabled = !string.IsNullOrWhiteSpace(_titleTextBox.Text);
         }
 
         private void SelectDate(DateTime date)
@@ -182,41 +272,27 @@ namespace SharuaTaskManager.UI
         private void UpdateDateButtons()
         {
             // Reset all buttons
-            _todayButton.BackColor = _isDarkMode ? Color.FromArgb(50, 50, 50) : Color.FromArgb(240, 240, 240);
-            _tomorrowButton.BackColor = _isDarkMode ? Color.FromArgb(50, 50, 50) : Color.FromArgb(240, 240, 240);
-            _customDatePicker.BackColor = _isDarkMode ? Color.FromArgb(50, 50, 50) : Color.FromArgb(240, 240, 240);
+            _todayButton.BackColor = _isDarkMode ? Color.FromArgb(60, 60, 60) : Color.FromArgb(240, 240, 240);
+            _tomorrowButton.BackColor = _isDarkMode ? Color.FromArgb(60, 60, 60) : Color.FromArgb(240, 240, 240);
+            _customDatePicker.BackColor = _isDarkMode ? Color.FromArgb(60, 60, 60) : Color.FromArgb(240, 240, 240);
 
             if (_selectedDate.HasValue)
             {
                 if (_selectedDate.Value.Date == DateTime.Today)
                 {
-                    _todayButton.BackColor = Color.FromArgb(76, 175, 80);
+                    _todayButton.BackColor = Color.FromArgb(0, 122, 255);
                     _todayButton.ForeColor = Color.White;
                 }
                 else if (_selectedDate.Value.Date == DateTime.Today.AddDays(1))
                 {
-                    _tomorrowButton.BackColor = Color.FromArgb(76, 175, 80);
+                    _tomorrowButton.BackColor = Color.FromArgb(0, 122, 255);
                     _tomorrowButton.ForeColor = Color.White;
                 }
                 else
                 {
-                    _customDatePicker.BackColor = Color.FromArgb(76, 175, 80);
+                    _customDatePicker.BackColor = Color.FromArgb(0, 122, 255);
                     _customDatePicker.ForeColor = Color.White;
                 }
-            }
-        }
-
-        private bool IsDarkMode()
-        {
-            try
-            {
-                var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
-                var value = key != null ? key.GetValue("AppsUseLightTheme") : null;
-                return value != null && value.ToString() == "0";
-            }
-            catch
-            {
-                return false;
             }
         }
 
