@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using SharuaTaskManager.Models;
 using SharuaTaskManager.Services;
@@ -10,6 +11,16 @@ namespace SharuaTaskManager.UI
 {
     public partial class MainForm : Form
     {
+        // Windows API для глобальных горячих клавиш
+        [DllImport("user32.dll")]
+        private static extern bool RegisterHotKey(IntPtr hWnd, int id, int fsModifiers, int vk);
+
+        [DllImport("user32.dll")]
+        private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+
+        private const int HOTKEY_ID_TOGGLE = 1;
+        private const int HOTKEY_ID_ADD_TASK = 2;
+
         private TaskService _taskService;
         private SettingsService _settingsService;
         private Panel _mainPanel;
@@ -48,6 +59,27 @@ namespace SharuaTaskManager.UI
             this.Opacity = 0.95;
             
             this.ResumeLayout(false);
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            const int WM_HOTKEY = 0x0312;
+            
+            if (m.Msg == WM_HOTKEY)
+            {
+                switch (m.WParam.ToInt32())
+                {
+                    case HOTKEY_ID_TOGGLE:
+                        ViewToggleButton_Click(this, EventArgs.Empty);
+                        break;
+                    case HOTKEY_ID_ADD_TASK:
+                        AddTaskButton_Click(this, EventArgs.Empty);
+                        break;
+                }
+                return;
+            }
+            
+            base.WndProc(ref m);
         }
 
         private void SetupUI()
@@ -374,6 +406,38 @@ namespace SharuaTaskManager.UI
         {
             this.KeyPreview = true;
             this.KeyDown += MainForm_KeyDown;
+            RegisterGlobalHotkeys();
+        }
+
+        private void RegisterGlobalHotkeys()
+        {
+            try
+            {
+                // Регистрируем глобальные горячие клавиши
+                var toggleKeys = _settingsService.ParseHotkey(_settingsService.ToggleViewHotkey);
+                var addTaskKeys = _settingsService.ParseHotkey(_settingsService.AddTaskHotkey);
+
+                RegisterHotKey(this.Handle, HOTKEY_ID_TOGGLE, GetModifiers(toggleKeys), GetKeyCode(toggleKeys));
+                RegisterHotKey(this.Handle, HOTKEY_ID_ADD_TASK, GetModifiers(addTaskKeys), GetKeyCode(addTaskKeys));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error registering hotkeys: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private int GetModifiers(Keys keys)
+        {
+            int modifiers = 0;
+            if ((keys & Keys.Control) == Keys.Control) modifiers |= 0x0002; // MOD_CONTROL
+            if ((keys & Keys.Alt) == Keys.Alt) modifiers |= 0x0001; // MOD_ALT
+            if ((keys & Keys.Shift) == Keys.Shift) modifiers |= 0x0004; // MOD_SHIFT
+            return modifiers;
+        }
+
+        private int GetKeyCode(Keys keys)
+        {
+            return (int)(keys & Keys.KeyCode);
         }
 
         private void MainForm_KeyDown(object sender, KeyEventArgs e)
@@ -433,6 +497,19 @@ namespace SharuaTaskManager.UI
         }
 
 
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            // Отменяем регистрацию глобальных горячих клавиш
+            try
+            {
+                UnregisterHotKey(this.Handle, HOTKEY_ID_TOGGLE);
+                UnregisterHotKey(this.Handle, HOTKEY_ID_ADD_TASK);
+            }
+            catch { }
+            
+            base.OnFormClosed(e);
+        }
+
         private void SettingsButton_Click(object sender, EventArgs e)
         {
             var settingsForm = new SettingsForm();
@@ -441,6 +518,16 @@ namespace SharuaTaskManager.UI
                 // Reload settings
                 _settingsService.LoadSettings();
                 _isDarkMode = _settingsService.IsDarkMode();
+                
+                // Перерегистрируем горячие клавиши с новыми настройками
+                try
+                {
+                    UnregisterHotKey(this.Handle, HOTKEY_ID_TOGGLE);
+                    UnregisterHotKey(this.Handle, HOTKEY_ID_ADD_TASK);
+                }
+                catch { }
+                
+                RegisterGlobalHotkeys();
                 
                 // Update UI theme
                 UpdateTheme();

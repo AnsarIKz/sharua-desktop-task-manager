@@ -35,6 +35,7 @@ namespace SharuaTaskManager
             var currentProcess = System.Diagnostics.Process.GetCurrentProcess();
             var processes = System.Diagnostics.Process.GetProcessesByName(currentProcess.ProcessName);
             
+            // Исключаем текущий процесс из подсчета
             return processes.Length > 1;
         }
     }

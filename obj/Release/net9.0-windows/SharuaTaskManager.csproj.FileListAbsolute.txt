@@ -1,0 +1,15 @@
+C:\Users\Ansar\Workspace\sharua\bin\Release\net9.0-windows\SharuaTaskManager.exe
+C:\Users\Ansar\Workspace\sharua\bin\Release\net9.0-windows\SharuaTaskManager.deps.json
+C:\Users\Ansar\Workspace\sharua\bin\Release\net9.0-windows\SharuaTaskManager.runtimeconfig.json
+C:\Users\Ansar\Workspace\sharua\bin\Release\net9.0-windows\SharuaTaskManager.dll
+C:\Users\Ansar\Workspace\sharua\bin\Release\net9.0-windows\SharuaTaskManager.pdb
+C:\Users\Ansar\Workspace\sharua\obj\Release\net9.0-windows\SharuaTaskManager.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Ansar\Workspace\sharua\obj\Release\net9.0-windows\SharuaTaskManager.AssemblyInfoInputs.cache
+C:\Users\Ansar\Workspace\sharua\obj\Release\net9.0-windows\SharuaTaskManager.AssemblyInfo.cs
+C:\Users\Ansar\Workspace\sharua\obj\Release\net9.0-windows\SharuaTaskManager.csproj.CoreCompileInputs.cache
+C:\Users\Ansar\Workspace\sharua\obj\Release\net9.0-windows\SharuaTaskManager.sourcelink.json
+C:\Users\Ansar\Workspace\sharua\obj\Release\net9.0-windows\SharuaTaskManager.dll
+C:\Users\Ansar\Workspace\sharua\obj\Release\net9.0-windows\refint\SharuaTaskManager.dll
+C:\Users\Ansar\Workspace\sharua\obj\Release\net9.0-windows\SharuaTaskManager.pdb
+C:\Users\Ansar\Workspace\sharua\obj\Release\net9.0-windows\SharuaTaskManager.genruntimeconfig.cache
+C:\Users\Ansar\Workspace\sharua\obj\Release\net9.0-windows\ref\SharuaTaskManager.dll

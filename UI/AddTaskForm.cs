@@ -21,7 +21,6 @@ namespace SharuaTaskManager.UI
         private Button _cancelButton;
         private bool _isDarkMode;
         private DateTime? _selectedDate;
-        private TaskPriority _selectedPriority;
 
         public event EventHandler<Models.Task> TaskAdded;
 
@@ -128,6 +127,24 @@ namespace SharuaTaskManager.UI
             _customDatePicker.Format = DateTimePickerFormat.Short;
             _customDatePicker.ValueChanged += (s, e) => SelectDate(_customDatePicker.Value.Date);
 
+            // Priority ComboBox
+            _priorityComboBox = new ComboBox();
+            _priorityComboBox.Location = new Point(10, 50);
+            _priorityComboBox.Size = new Size(120, 32);
+            _priorityComboBox.Font = new Font("Segoe UI", 9);
+            _priorityComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            _priorityComboBox.Items.AddRange(new object[] { "Low", "Medium", "High", "Urgent" });
+            _priorityComboBox.SelectedIndex = 1; // Medium по умолчанию
+            _priorityComboBox.BackColor = _isDarkMode ? Color.FromArgb(60, 60, 60) : Color.White;
+            _priorityComboBox.ForeColor = _isDarkMode ? Color.White : Color.Black;
+
+            // Priority label
+            var priorityLabel = new Label();
+            priorityLabel.Text = "Priority:";
+            priorityLabel.Location = new Point(10, 30);
+            priorityLabel.Size = new Size(60, 20);
+            priorityLabel.Font = new Font("Segoe UI", 9);
+            priorityLabel.ForeColor = _isDarkMode ? Color.White : Color.Black;
 
             // Save button - modern style
             _saveButton = new Button();
@@ -172,6 +189,8 @@ namespace SharuaTaskManager.UI
             _toolbarPanel.Controls.Add(_customDatePicker);
             _toolbarPanel.Controls.Add(_saveButton);
             _toolbarPanel.Controls.Add(_cancelButton);
+            _toolbarPanel.Controls.Add(priorityLabel);
+            _toolbarPanel.Controls.Add(_priorityComboBox);
 
             mainPanel.Controls.Add(_titleTextBox);
             mainPanel.Controls.Add(_contentTextBox);
@@ -181,7 +200,6 @@ namespace SharuaTaskManager.UI
             this.Controls.Add(mainPanel);
 
             _titleTextBox.Focus();
-            _selectedPriority = TaskPriority.Medium;
         }
 
         private void TitleTextBox_GotFocus(object sender, EventArgs e)
@@ -256,7 +274,17 @@ namespace SharuaTaskManager.UI
             task.Description = _contentTextBox.Text.Trim();
             task.DueDate = _selectedDate;
             task.IsInBacklog = !_selectedDate.HasValue;
-            task.Priority = _selectedPriority;
+            
+            // Получаем приоритет из ComboBox
+            var priorityText = _priorityComboBox.SelectedItem?.ToString() ?? "Medium";
+            task.Priority = priorityText switch
+            {
+                "Low" => TaskPriority.Low,
+                "Medium" => TaskPriority.Medium,
+                "High" => TaskPriority.High,
+                "Urgent" => TaskPriority.Urgent,
+                _ => TaskPriority.Medium
+            };
 
             _taskService.AddTask(task);
             TaskAdded?.Invoke(this, task);

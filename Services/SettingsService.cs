@@ -38,15 +38,15 @@ namespace SharuaTaskManager.Services
                     var toggleValue = settingsKey.GetValue("ToggleViewHotkey");
                     ToggleViewHotkey = toggleValue != null ? toggleValue.ToString() : "Ctrl+T";
                     var showMainValue = settingsKey.GetValue("ShowMainHotkey");
-                    ShowMainHotkey = showMainValue != null ? showMainValue.ToString() : "Ctrl+Shift+T";
+                    ShowMainHotkey = showMainValue != null ? showMainValue.ToString() : "Ctrl+Alt+T";
                 }
                 else
                 {
-                    // Default values
-                    Theme = 0;
-                    AddTaskHotkey = "Ctrl+N";
-                    ToggleViewHotkey = "Ctrl+T";
-                    ShowMainHotkey = "Ctrl+Shift+T";
+                // Default values
+                Theme = 0;
+                AddTaskHotkey = "Ctrl+N";
+                ToggleViewHotkey = "Ctrl+T";
+                ShowMainHotkey = "Ctrl+Alt+T";
                 }
             }
             catch
@@ -56,7 +56,7 @@ namespace SharuaTaskManager.Services
                 Theme = 0;
                 AddTaskHotkey = "Ctrl+N";
                 ToggleViewHotkey = "Ctrl+T";
-                ShowMainHotkey = "Ctrl+Shift+T";
+                ShowMainHotkey = "Ctrl+Alt+T";
             }
         }
 
